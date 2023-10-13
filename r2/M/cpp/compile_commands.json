@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/pijon/Documents/dev/pca/r2/M/build/linux-debug",
+  "command": "/usr/bin/c++ -g -std=gnu++20 -o CMakeFiles/MyCpp20Project.dir/main.cpp.o -c /home/pijon/Documents/dev/pca/r2/M/main.cpp",
+  "file": "/home/pijon/Documents/dev/pca/r2/M/main.cpp"
+}
+]

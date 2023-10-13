@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/pijon/Documents/dev/pca/grafuri/427C/cpp/build/linux-debug",
+  "command": "/usr/bin/c++ -g -std=gnu++23 -o CMakeFiles/exec.dir/main.cpp.o -c /home/pijon/Documents/dev/pca/grafuri/427C/cpp/main.cpp",
+  "file": "/home/pijon/Documents/dev/pca/grafuri/427C/cpp/main.cpp"
+}
+]
