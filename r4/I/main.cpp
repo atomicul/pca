@@ -12,17 +12,16 @@ void solve() {
     std::cin >> corals[i];
 
   std::sort(corals.begin(), corals.end());
-  std::vector<int> water_required(n, 0);
-  for (int i = 1; i < n; i++) {
-    const int height_diff = corals[i] - corals[i - 1];
-    water_required[i] = water_required[i - 1] + height_diff * i;
+  int waterRequired = 0;
+  int i = 0;
+  for (; i + 1 < n; i++) {
+    int heigthDiff = corals[i + 1] - corals[i];
+    if (waterRequired + heigthDiff * (i + 1) > water)
+      break;
+    waterRequired += heigthDiff * (i + 1);
   }
-  auto it =
-      std::upper_bound(water_required.begin(), water_required.end(), water);
-  it--;
-  water -= *it;
-  int pos = std::distance(water_required.begin(), it);
-  std::cout << corals[pos] + water / (pos + 1) << '\n';
+  water -= waterRequired;
+  std::cout << corals[i] + water / (i + 1) << '\n';
 }
 
 int32_t main() {

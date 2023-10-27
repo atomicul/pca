@@ -7,8 +7,8 @@ for i, br in brackets:
     if br in '({[':
         stk.append(br)
     else:
-        coresponding_br = map_parentheses[br]
-        if not stk or stk[-1] != coresponding_br:
+        corresponding_br = map_parentheses[br]
+        if not stk or stk[-1] != corresponding_br:
             print(br, i)
             exit()
         stk.pop()
