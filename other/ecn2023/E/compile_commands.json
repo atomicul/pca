@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/pijon/Documents/dev/pca/other/ecn2023/E/build/linux-debug",
+  "command": "/usr/bin/c++ -I/home/pijon/Documents/dev/pca/other/ecn2023/E/include -g -std=gnu++20 -o CMakeFiles/my_executable.dir/main.cpp.o -c /home/pijon/Documents/dev/pca/other/ecn2023/E/main.cpp",
+  "file": "/home/pijon/Documents/dev/pca/other/ecn2023/E/main.cpp"
+}
+]
