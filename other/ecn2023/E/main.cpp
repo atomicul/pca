@@ -88,11 +88,11 @@ int32_t main() {
 
     vector<ll> partsum(v2);
     partial_sum(partsum.begin(), partsum.end(), partsum.begin());
-    const SegmentTree<ll, Max> MaxTree(v1);
+    const SegmentTree<ll, Max> maxTree(v1);
 
     ll minim = LONG_LONG_MAX;
     for (int i = 0; i < n - k + 1; i++) {
-      ll maxim = MaxTree.query(i, i + k);
+      ll maxim = maxTree.query(i, i + k);
       maxim -= i;
       maxim *= k;
 
