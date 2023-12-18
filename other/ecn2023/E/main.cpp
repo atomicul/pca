@@ -50,7 +50,7 @@ private:
   protected:
     size_t index;
     int l, r;
-    decltype(SegmentTree<T, Aggregate>::tree) &tree;
+    std::vector<T> const &tree;
 
     int mid() { return (l + r) / 2; }
 
@@ -64,8 +64,7 @@ private:
     int segmentSize() const { return r - l; }
 
     ConstIterator(SegmentTree<T, Aggregate> const *parent)
-        : tree(const_cast<decltype(tree)>(parent->tree)), index(1), l(0),
-          r(parent->tree.size()) {}
+        : tree(parent->tree), index(1), l(0), r(parent->size) {}
 
     ConstIterator(ConstIterator const &other) = default;
 
@@ -90,44 +89,52 @@ private:
     }
 
     ConstIterator nextLeft() const {
-      ConstIterator it(*this);
-      it.advanceLeft();
-      return it;
+      return ConstIterator(*this).advanceLeft();
     }
-
     ConstIterator nextRight() const {
-      ConstIterator it(*this);
-      it.advanceRight();
-      return it;
+      return ConstIterator(*this).advanceRight();
     }
-
     ConstIterator nextTowards(int x) const {
-      ConstIterator it(*this);
-      it.advanceTowards(x);
-      return it;
+      return ConstIterator(*this).advanceTowards(x);
     }
   };
 
   class Iterator : public ConstIterator {
-  private:
-    Iterator(ConstIterator const &other) : ConstIterator(other) {}
+  protected:
+    std::vector<T> &tree;
 
   public:
-    using ConstIterator::ConstIterator;
+    Iterator(SegmentTree<T, Aggregate> *parent)
+        : tree(parent->tree), ConstIterator(parent) {}
 
-    T &operator*() const { return this->tree[this->index]; }
-    T *operator->() const { return this->tree[this->index]; }
-    Iterator advanceLeft() { return Iterator(ConstIterator::advanceLeft()); }
-    Iterator advanceRight() { return Iterator(ConstIterator::advanceRight()); }
-    Iterator advanceTowards(int x) {
-      return Iterator(ConstIterator::advanceTowards(x));
+    T &operator*() const { return tree[this->index]; }
+    T *operator->() const { return tree[this->index]; }
+    Iterator advanceLeft() {
+      ConstIterator::advanceLeft();
+      return *this;
     }
-    Iterator nextLeft() const { return Iterator(ConstIterator::nextLeft()); }
-    Iterator nextRight() const { return Iterator(ConstIterator::nextRight()); }
+    Iterator advanceRight() {
+      ConstIterator::advanceRight();
+      return *this;
+    }
+    Iterator advanceTowards(int x) {
+      ConstIterator::advanceTowards(x);
+      return *this;
+    }
+    Iterator nextLeft() const { return Iterator(*this).advanceLeft(); }
+    Iterator nextRight() const { return Iterator(*this).advanceRight(); }
     Iterator nextTowards(int x) const {
-      return Iterator(ConstIterator::nextTowards(x));
+      return Iterator(*this).advanceTowards(x);
     }
   };
+
+  T evalChildren(ConstIterator const node) {
+    assert(node.segmentSize() > 1);
+    auto variant = _Aggregate()(*node.nextLeft(), *node.nextRight());
+    const T *x = std::get_if<T>(&variant);
+    assert(x != nullptr);
+    return *x;
+  }
 
   void build(Iterator const node, const std::vector<T> &vec) {
     if (node.segmentSize() == 1) {
@@ -138,14 +145,10 @@ private:
     build(node.nextLeft(), vec);
     build(node.nextRight(), vec);
 
-    auto variant = _Aggregate()(*node.nextLeft(), *node.nextRight());
-    const T *x = std::get_if<T>(&variant);
-    assert(x != nullptr);
-
-    *node = *x;
+    *node = evalChildren(node);
   }
 
-  void upd(ConstIterator const node, int pos, const T &val) {
+  void upd(Iterator const node, int pos, const T &val) {
     if (node.segmentSize() == 1) {
       *node = val;
       return;
@@ -153,7 +156,7 @@ private:
 
     upd(node.nextTowards(pos), pos, val);
 
-    tree[node] = _Aggregate()(*node.nextLeft(), *node.nextRight());
+    *node = evalChildren(node);
   }
 
   std::variant<T, typename _Aggregate::NullElement>
