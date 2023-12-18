@@ -1,65 +1,170 @@
+#include <cassert>
 #include <climits>
 #include <iostream>
 #include <map>
 #include <numeric>
 #include <stack>
 #include <string>
+#include <variant>
 #include <vector>
 
 typedef long long ll;
 
 template <typename T, typename Aggregate> class SegmentTree {
+  struct _Aggregate : public Aggregate {
+    struct NullElement {};
+    NullElement operator()() { return NullElement(); }
+    using R = std::variant<T, NullElement>;
+    T operator()(T const &a, NullElement b) { return a; }
+    T operator()(NullElement a, T const &b) { return b; }
+    R operator()(R const &a, R const &b) {
+      T const *ta, *tb;
+      if ((ta = std::get_if<T>(&a)) && (tb = std::get_if<T>(&b)))
+        return static_cast<Aggregate *>(this)->operator()(*ta, *tb);
+      if ((ta = std::get_if<T>(&a)) || (ta = std::get_if<T>(&b)))
+        return *ta;
+      return this->operator()();
+    }
+  };
+
 public:
   SegmentTree(std::vector<T> const &vec) : size(vec.size()) {
     tree.resize(4 * vec.size() + 1, 0);
-    build(1, 0, size, vec);
+    build(Iterator(this), vec);
   }
 
-  void update(int pos, const T &val) { upd(1, 0, size, pos, val); }
+  void update(int pos, const T &val) { upd(Iterator(this), pos, val); }
 
-  T query(int l, int r) const { return qry(1, 0, size, l, r); }
+  T query(int l, int r) const {
+    auto var = qry(ConstIterator(this), l, r);
+    auto *out = std::get_if<T>(&var);
+    assert(out != nullptr);
+    return *out;
+  }
 
 private:
   std::vector<T> tree;
   int size;
 
-  void build(int node, int l, int r, const std::vector<T> &vec) {
-    if (r - l == 1) {
-      tree[node] = vec[l];
+  class ConstIterator {
+  protected:
+    size_t index;
+    int l, r;
+    decltype(SegmentTree<T, Aggregate>::tree) &tree;
+
+    int mid() { return (l + r) / 2; }
+
+  public:
+    const T &operator*() const { return tree[index]; }
+    const T *operator->() const { return tree[index]; }
+
+    int leftBound() const { return l; }
+    int rightBound() const { return r; }
+
+    int segmentSize() const { return r - l; }
+
+    ConstIterator(SegmentTree<T, Aggregate> const *parent)
+        : tree(const_cast<decltype(tree)>(parent->tree)), index(1), l(0),
+          r(parent->tree.size()) {}
+
+    ConstIterator(ConstIterator const &other) = default;
+
+    ConstIterator &advanceLeft() {
+      r = mid();
+      index = 2 * index;
+      return *this;
+    }
+    ConstIterator &advanceRight() {
+      l = mid();
+      index = 2 * index + 1;
+      return *this;
+    }
+
+    ConstIterator &advanceTowards(int x) {
+      assert(l <= x && x < r);
+      if (x < mid())
+        advanceLeft();
+      else
+        advanceRight();
+      return *this;
+    }
+
+    ConstIterator nextLeft() const {
+      ConstIterator it(*this);
+      it.advanceLeft();
+      return it;
+    }
+
+    ConstIterator nextRight() const {
+      ConstIterator it(*this);
+      it.advanceRight();
+      return it;
+    }
+
+    ConstIterator nextTowards(int x) const {
+      ConstIterator it(*this);
+      it.advanceTowards(x);
+      return it;
+    }
+  };
+
+  class Iterator : public ConstIterator {
+  private:
+    Iterator(ConstIterator const &other) : ConstIterator(other) {}
+
+  public:
+    using ConstIterator::ConstIterator;
+
+    T &operator*() const { return this->tree[this->index]; }
+    T *operator->() const { return this->tree[this->index]; }
+    Iterator advanceLeft() { return Iterator(ConstIterator::advanceLeft()); }
+    Iterator advanceRight() { return Iterator(ConstIterator::advanceRight()); }
+    Iterator advanceTowards(int x) {
+      return Iterator(ConstIterator::advanceTowards(x));
+    }
+    Iterator nextLeft() const { return Iterator(ConstIterator::nextLeft()); }
+    Iterator nextRight() const { return Iterator(ConstIterator::nextRight()); }
+    Iterator nextTowards(int x) const {
+      return Iterator(ConstIterator::nextTowards(x));
+    }
+  };
+
+  void build(Iterator const node, const std::vector<T> &vec) {
+    if (node.segmentSize() == 1) {
+      *node = vec[node.leftBound()];
       return;
     }
 
-    int mid = (l + r) / 2;
-    build(node * 2, l, mid, vec);
-    build(node * 2 + 1, mid, r, vec);
+    build(node.nextLeft(), vec);
+    build(node.nextRight(), vec);
 
-    tree[node] = Aggregate()(tree[node * 2], tree[node * 2 + 1]);
+    auto variant = _Aggregate()(*node.nextLeft(), *node.nextRight());
+    const T *x = std::get_if<T>(&variant);
+    assert(x != nullptr);
+
+    *node = *x;
   }
 
-  void upd(int node, int l, int r, int pos, const T &val) {
-    if (r - l == 1) {
-      tree[node] = val;
+  void upd(ConstIterator const node, int pos, const T &val) {
+    if (node.segmentSize() == 1) {
+      *node = val;
       return;
     }
 
-    int mid = (l + r) / 2;
-    if (pos < mid)
-      upd(node * 2, l, mid, pos, val);
-    else
-      upd(node * 2 + 1, mid, r, pos, val);
+    upd(node.nextTowards(pos), pos, val);
 
-    tree[node] = Aggregate()(tree[node * 2], tree[node * 2 + 1]);
+    tree[node] = _Aggregate()(*node.nextLeft(), *node.nextRight());
   }
 
-  T qry(int node, int l, int r, int ql, int qr) const {
-    if (ql <= l && r <= qr)
-      return tree[node];
-    if (qr <= l || ql >= r)
-      return 0;
+  std::variant<T, typename _Aggregate::NullElement>
+  qry(ConstIterator const node, int l, int r) const {
+    if (l <= node.leftBound() && node.rightBound() <= r)
+      return *node;
+    if (r <= node.leftBound() || l >= node.rightBound())
+      return _Aggregate()();
 
-    int mid = (l + r) / 2;
-    return Aggregate()(qry(node * 2, l, mid, ql, qr),
-                       qry(node * 2 + 1, mid, r, ql, qr));
+    return _Aggregate()(qry(node.nextLeft(), l, r),
+                        qry(node.nextRight(), l, r));
   }
 };
 
