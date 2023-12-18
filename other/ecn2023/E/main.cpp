@@ -109,15 +109,15 @@ private:
 
     T &operator*() const { return tree[this->index]; }
     T *operator->() const { return tree[this->index]; }
-    Iterator advanceLeft() {
+    Iterator &advanceLeft() {
       ConstIterator::advanceLeft();
       return *this;
     }
-    Iterator advanceRight() {
+    Iterator &advanceRight() {
       ConstIterator::advanceRight();
       return *this;
     }
-    Iterator advanceTowards(int x) {
+    Iterator &advanceTowards(int x) {
       ConstIterator::advanceTowards(x);
       return *this;
     }
