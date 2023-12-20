@@ -183,32 +183,25 @@ int32_t main() {
   while (t--) {
     int n, k;
     cin >> n >> k;
-    vector<ll> a(n);
-    for (ll &i : a)
+    vector<ll> pillars(n);
+    for (ll &i : pillars)
       cin >> i;
 
-    vector<ll> v1(a), v2(a);
+    vector<ll> partsum(pillars.size());
+    partial_sum(pillars.begin(), pillars.end(), partsum.begin());
 
-    for (int i = 0; i < n; i++) {
-      v1[i] += i;
-      v2[n - i - 1] += i;
-    }
+    for (int i = 0; i < n; i++)
+      pillars[i] += i;
 
-    vector<ll> partsum(v2);
-    partial_sum(partsum.begin(), partsum.end(), partsum.begin());
-    const SegmentTree<ll, Max> maxTree(v1);
+    const SegmentTree<ll, Max> maxTree(pillars);
 
     ll minim = LONG_LONG_MAX;
-    for (int i = 0; i < n - k + 1; i++) {
-      ll maxim = maxTree.query(i, i + k);
-      maxim -= i;
+    for (int i = 0; i + k <= n; i++) {
+      ll maxim = maxTree.query(i, i + k) - i;
       maxim *= k;
+      maxim -= k * (k - 1) / 2;
 
-      ll sum = 0;
-      sum += partsum[i + k - 1];
-      sum -= i > 0 ? partsum[i - 1] : 0;
-      sum = sum - (ll)(n - k - i) * k;
-
+      ll sum = partsum[i + k - 1] - (i > 0 ? partsum[i - 1] : 0);
       minim = min(maxim - sum, minim);
     }
     cout << minim << endl;
