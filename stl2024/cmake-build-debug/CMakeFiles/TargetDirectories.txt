@@ -1,0 +1,3 @@
+/home/pijon/Documents/dev/pca/stl2023/cmake-build-debug/CMakeFiles/stl2023.dir
+/home/pijon/Documents/dev/pca/stl2023/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/pijon/Documents/dev/pca/stl2023/cmake-build-debug/CMakeFiles/rebuild_cache.dir
